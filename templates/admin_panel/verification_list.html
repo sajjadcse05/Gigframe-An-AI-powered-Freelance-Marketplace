@@ -1,0 +1,80 @@
+{% extends "admin_panel/base.html" %}
+
+{% block title %}Identity Verification — Admin — Gigframe{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold text-gray-900 mb-6">Identity Verification</h1>
+
+<div class="flex gap-2 mb-6">
+  <a href="?status=PENDING" class="px-4 py-2 rounded-xl text-sm font-semibold {% if selected_status == 'PENDING' %}bg-brand-900 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">Pending</a>
+  <a href="?status=APPROVED" class="px-4 py-2 rounded-xl text-sm font-semibold {% if selected_status == 'APPROVED' %}bg-brand-900 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">Approved</a>
+  <a href="?status=REJECTED" class="px-4 py-2 rounded-xl text-sm font-semibold {% if selected_status == 'REJECTED' %}bg-brand-900 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">Rejected</a>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+  {% for u in users %}
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <p class="font-semibold text-gray-900">{{ u.username }} <span class="text-gray-400 font-mono text-xs font-normal">#{{ u.pk }}</span></p>
+        <p class="text-xs text-gray-500">{{ u.email }}</p>
+        <p class="text-xs text-gray-500 mt-1">NID: {{ u.nid_number|default:"—" }}</p>
+      </div>
+      {% if u.verification_status == "PENDING" %}
+        <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">Pending</span>
+      {% elif u.verification_status == "APPROVED" %}
+        <span class="px-2.5 py-1 rounded-full bg-green-50 text-green-700 text-xs font-semibold">Approved</span>
+      {% else %}
+        <span class="px-2.5 py-1 rounded-full bg-red-50 text-red-700 text-xs font-semibold">Rejected</span>
+      {% endif %}
+    </div>
+
+    {% if u.nid_document %}
+      <a href="{{ u.nid_document.url }}" target="_blank" class="block mb-4">
+        <img src="{{ u.nid_document.url }}" alt="NID document" class="w-full h-40 object-cover rounded-xl border border-gray-200" />
+      </a>
+    {% else %}
+      <div class="w-full h-40 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center text-xs text-gray-400 mb-4">
+        No document uploaded
+      </div>
+    {% endif %}
+
+    {% if u.verification_status == "PENDING" %}
+      <div class="flex gap-2">
+        <form method="post" action="{% url 'admin_verification_decide' u.pk %}" class="flex-1">
+          {% csrf_token %}
+          <input type="hidden" name="decision" value="approve" />
+          <button type="submit" class="w-full py-2 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700">Approve</button>
+        </form>
+        <button type="button" onclick="document.getElementById('reject-{{ u.pk }}').classList.toggle('hidden')"
+          class="flex-1 py-2 rounded-xl bg-red-50 text-red-700 text-sm font-semibold hover:bg-red-100">Reject</button>
+      </div>
+
+      <form id="reject-{{ u.pk }}" method="post" action="{% url 'admin_verification_decide' u.pk %}" class="hidden mt-3">
+        {% csrf_token %}
+        <input type="hidden" name="decision" value="reject" />
+        <textarea name="reason" rows="2" placeholder="Reason for rejection..."
+          class="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-red-300"></textarea>
+        <button type="submit" class="w-full py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700">Confirm Rejection</button>
+      </form>
+    {% elif u.verification_status == "REJECTED" and u.verification_rejection_reason %}
+      <p class="text-xs text-red-600 mt-2">Reason: {{ u.verification_rejection_reason }}</p>
+    {% endif %}
+  </div>
+  {% empty %}
+  <p class="text-gray-500 col-span-2 text-center py-10">No submissions in this category.</p>
+  {% endfor %}
+</div>
+
+{% if is_paginated %}
+<div class="flex items-center justify-center gap-4 mt-8 text-sm">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&status={{ selected_status }}" class="text-brand-900 font-semibold hover:underline">← Prev</a>
+  {% endif %}
+  <span class="text-gray-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&status={{ selected_status }}" class="text-brand-900 font-semibold hover:underline">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

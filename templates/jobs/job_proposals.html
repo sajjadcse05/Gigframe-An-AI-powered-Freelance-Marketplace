@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Proposals for {{ job.title }} — Gigframe{% endblock %}
+
+{% block content %}
+<section class="max-w-4xl mx-auto px-6 py-16">
+  <a href="{% url 'my_jobs' %}" class="text-sm text-brand-800 hover:underline mb-6 inline-block">← Back to my jobs</a>
+
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Proposals for "{{ job.title }}"</h1>
+  <p class="text-gray-600 mb-10">{{ proposals.count }} freelancer{{ proposals.count|pluralize }} applied.</p>
+
+  {% if proposals %}
+    <div class="space-y-5">
+      {% for proposal in proposals %}
+        <div class="border border-gray-200 rounded-2xl p-6">
+          <div class="flex items-start justify-between gap-4 mb-4">
+            <div>
+              <h3 class="font-semibold text-lg text-gray-900">{{ proposal.freelancer.username }}</h3>
+              <p class="text-xs text-gray-500">Submitted {{ proposal.created_at|date:"M d, Y" }}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-xl font-bold text-brand-900">৳{{ proposal.quoted_price }}</p>
+              <p class="text-xs text-gray-500">{{ proposal.delivery_days }} day{{ proposal.delivery_days|pluralize }} delivery</p>
+            </div>
+          </div>
+
+          <p class="text-gray-700 text-sm leading-relaxed mb-5 whitespace-pre-line">{{ proposal.cover_letter }}</p>
+
+          <div class="flex items-center justify-between">
+            {% if proposal.status == "PENDING" %}
+              <span class="text-xs font-semibold text-amber-600 bg-amber-50 px-3 py-1 rounded-full">Pending</span>
+              <div class="flex gap-3">
+                <a href="{% url 'update_proposal_status' proposal.pk 'REJECTED' %}"
+                   class="text-sm font-semibold text-gray-600 border border-gray-300 px-4 py-2 rounded-full hover:bg-gray-50 transition">
+                  Reject
+                </a>
+                <a href="{% url 'update_proposal_status' proposal.pk 'ACCEPTED' %}"
+                   class="text-sm font-semibold text-white bg-brand-900 px-4 py-2 rounded-full hover:bg-brand-950 transition">
+                  Accept
+                </a>
+              </div>
+                                    {% elif proposal.status == "ACCEPTED" %}
+              <span class="text-xs font-semibold text-green-700 bg-green-50 px-3 py-1 rounded-full">✓ Accepted</span>
+              {% if proposal.contract %}
+                <a href="{% url 'contract_detail' proposal.contract.pk %}" class="text-sm font-semibold text-brand-800 hover:underline">
+                  View Contract →
+                </a>
+              {% endif %}
+            {% else %}
+              <span class="text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">Rejected</span>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="text-center py-20 text-gray-500">
+      No proposals submitted yet.
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

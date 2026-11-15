@@ -1,0 +1,30 @@
+/* ===========================================================
+   Gigframe — Custom styles
+   Tailwind (loaded via CDN in index.html) handles almost everything.
+   This file only covers the small pieces Tailwind's utility classes
+   don't reach directly.
+   =========================================================== */
+
+/* Category cards: subtle hover lift, not a default Tailwind utility */
+.category-card {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.category-card:hover {
+  transform: translateY(-4px);
+  opacity: 0.95;
+}
+
+/* Hide the scrollbar on the horizontally-scrolling category row,
+   while keeping it scrollable (mouse drag / touch / trackpad still work) */
+.max-w-7xl.mx-auto.px-6.py-20 > div.flex.overflow-x-auto {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* old Edge */
+}
+.max-w-7xl.mx-auto.px-6.py-20 > div.flex.overflow-x-auto::-webkit-scrollbar {
+  display: none;               /* Chrome/Safari */
+}
+
+/* Smooth scroll for in-page anchor links (nav -> sections), if you wire any up later */
+html {
+  scroll-behavior: smooth;
+}

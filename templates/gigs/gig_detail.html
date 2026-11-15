@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}{{ gig.title }} — Gigframe{% endblock %}
+
+{% block content %}
+<section class="max-w-6xl mx-auto px-6 py-16">
+  {% csrf_token %}
+  <a href="{% url 'gig_list' %}" class="text-sm text-brand-800 hover:underline mb-6 inline-block">← Back to gigs</a>
+
+  <span class="text-xs font-semibold text-brand-800 uppercase tracking-wide">{{ gig.category }}</span>
+  <h1 class="text-3xl font-bold text-gray-900 mt-2 mb-8">{{ gig.title }}</h1>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+    <!-- ===== Main content (left, spans 2 columns) ===== -->
+    <div class="lg:col-span-2">
+
+      {% if gig.images.all %}
+        <div class="grid grid-cols-4 gap-2 mb-8 rounded-2xl overflow-hidden">
+          <img src="{{ gig.images.first.image.url }}" alt="{{ gig.title }}" class="col-span-4 sm:col-span-3 h-80 w-full object-cover" />
+          <div class="hidden sm:flex flex-col gap-2 h-80 overflow-y-auto">
+            {% for img in gig.images.all %}
+              <img src="{{ img.image.url }}" alt="{{ gig.title }}" class="h-[6.25rem] w-full object-cover rounded-lg" />
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      {% if gig.video %}
+        <div class="mb-8 rounded-2xl overflow-hidden">
+          <video controls class="w-full max-h-96 bg-black">
+            <source src="{{ gig.video.url }}">
+            Your browser doesn't support embedded video.
+          </video>
+        </div>
+      {% endif %}
+
+      <div class="bg-gray-50 rounded-2xl p-8 mb-8">
+        <h2 class="font-semibold text-gray-900 mb-3">Description</h2>
+        <p class="text-gray-700 leading-relaxed whitespace-pre-line">{{ gig.description }}</p>
+      </div>
+
+      {% if tag_list %}
+        <div class="flex flex-wrap gap-2 mb-10">
+          {% for tag in tag_list %}
+            <span class="text-xs bg-brand-50 text-brand-800 px-3 py-1 rounded-full">{{ tag }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- ===== Reviews for this freelancer ===== -->
+      <div class="border-t border-gray-200 pt-8">
+        <div class="flex items-center gap-3 mb-6">
+          <h2 class="font-semibold text-gray-900 text-lg">Reviews for {{ gig.freelancer.username }}</h2>
+          {% if freelancer_average_rating %}
+            <span class="text-amber-600 font-semibold text-sm">★ {{ freelancer_average_rating }}</span>
+            <span class="text-gray-400 text-sm">({{ freelancer_review_count }})</span>
+          {% endif %}
+        </div>
+
+        {% if freelancer_reviews %}
+          <div class="space-y-4">
+            {% for review in freelancer_reviews %}
+              <div class="border border-gray-200 rounded-2xl p-5">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-medium text-gray-900">{{ review.reviewer.username }}</span>
+                  <span class="text-amber-600 font-semibold text-sm">{{ review.rating }} ★</span>
+                </div>
+                {% if review.comment %}
+                  <p class="text-sm text-gray-600 leading-relaxed">{{ review.comment }}</p>
+                {% endif %}
+                <p class="text-xs text-gray-400 mt-2">{{ review.created_at|date:"M d, Y" }}</p>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-gray-500 text-sm">No reviews yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ===== Sidebar (right) ===== -->
+    <div class="space-y-6">
+
+      <!-- Freelancer card -->
+      <div class="border border-gray-200 rounded-2xl p-6">
+        <a href="{% url 'view_profile' gig.freelancer.username %}" class="flex items-center gap-3 mb-4 hover:opacity-80 transition">
+          {% if gig.freelancer.avatar %}
+            <img src="{{ gig.freelancer.avatar.url }}" alt="{{ gig.freelancer.username }}" class="w-14 h-14 rounded-full object-cover border border-gray-200" />
+          {% else %}
+            <div class="w-14 h-14 rounded-full bg-brand-900 text-white flex items-center justify-center text-lg font-bold">
+              {{ gig.freelancer.username|slice:":1"|upper }}
+            </div>
+          {% endif %}
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-semibold text-gray-900">{{ gig.freelancer.username }}</span>
+              {% if gig.freelancer.is_verified %}
+                <span class="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full">✓</span>
+              {% endif %}
+            </div>
+            {% if freelancer_average_rating %}
+              <p class="text-xs text-amber-600 font-medium">★ {{ freelancer_average_rating }} ({{ freelancer_review_count }})</p>
+            {% else %}
+              <p class="text-xs text-gray-400">No reviews yet</p>
+            {% endif %}
+          </div>
+        </a>
+
+        <a href="{% url 'view_profile' gig.freelancer.username %}" class="block text-center text-sm font-semibold text-brand-800 border border-brand-800 rounded-full py-2.5 hover:bg-brand-50 transition">
+          View Full Profile
+        </a>
+      </div>
+
+      <!-- Price / contact card -->
+      <div class="border border-gray-200 rounded-2xl p-6">
+        <p class="text-sm text-gray-500">Starting at</p>
+        <p class="text-2xl font-bold text-brand-900 mb-1">৳{{ gig.price }}</p>
+        <p class="text-xs text-gray-500 mb-5">Delivery in {{ gig.delivery_days }} day{{ gig.delivery_days|pluralize }}</p>
+
+        {% if user.is_authenticated and user.role == "CLIENT" %}
+          {% if gig.freelancer != user %}
+            <a href="{% url 'gig_order' gig.pk %}" class="block w-full text-center bg-brand-900 text-white font-semibold py-3 rounded-full hover:bg-brand-950 transition mb-3">
+              Hire Now
+            </a>
+            <button id="widgetBubbleTrigger" class="w-full bg-white border border-brand-900 text-brand-900 font-semibold py-3 rounded-full hover:bg-brand-50 transition">
+              Contact Freelancer
+            </button>
+          {% endif %}
+        {% elif not user.is_authenticated %}
+          <a href="{% url 'login' %}" class="block w-full text-center bg-brand-900 text-white font-semibold py-3 rounded-full hover:bg-brand-950 transition">
+            Sign in to Contact
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% include "chat/_widget.html" with chat_target_user=gig.freelancer %}
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const trigger = document.getElementById('widgetBubbleTrigger');
+    const bubble = document.getElementById('widgetBubble');
+    if (trigger && bubble) {
+      trigger.addEventListener('click', () => bubble.click());
+    }
+  });
+</script>
+{% endblock %}

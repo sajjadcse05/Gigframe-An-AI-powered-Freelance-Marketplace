@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Chat with {{ other_user.username }} — Gigframe{% endblock %}
+
+{% block content %}
+<section class="max-w-2xl mx-auto px-6 py-10">
+  <a href="{% url 'chat_inbox' %}" class="text-sm text-brand-800 hover:underline mb-6 inline-block">← All messages</a>
+
+  <div class="border border-gray-200 rounded-2xl overflow-hidden flex flex-col h-[32rem]">
+    <div class="bg-brand-900 text-white px-5 py-4 font-semibold flex justify-between items-center">
+      <span>{{ other_user.username }}</span>
+    </div>
+
+    <div id="messageList" class="flex-1 overflow-y-auto p-5 space-y-3 bg-gray-50">
+      {% for message in messages %}
+        <div class="flex {% if message.sender == request.user %}justify-end{% else %}justify-start{% endif %}">
+          <div class="max-w-[75%] px-4 py-2 rounded-2xl text-sm
+                      {% if message.sender == request.user %}bg-brand-900 text-white{% else %}bg-white border border-gray-200 text-gray-800{% endif %}">
+            
+            {% if message.text %}
+              <div>{{ message.text }}</div>
+            {% endif %}
+
+            {% if message.file %}
+              <div class="mt-2 pt-2 border-t border-white/20">
+                <a href="{{ message.file.url }}" target="_blank" download class="inline-flex items-center gap-1.5 underline text-xs">
+                  📎 Download Attachment
+                </a>
+              </div>
+            {% endif %}
+
+            <div class="text-[10px] opacity-60 mt-1">{{ message.created_at|date:"H:i" }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Selected File Preview Indicator -->
+    <div id="filePreview" class="hidden px-4 py-2 bg-gray-100 border-t border-gray-200 text-xs flex items-center justify-between text-gray-700">
+      <span id="fileName" class="truncate max-w-[80%]"></span>
+      <button type="button" id="removeFileBtn" class="text-red-500 hover:underline font-semibold ml-2">Remove</button>
+    </div>
+
+    <form id="messageForm" class="flex items-center gap-2 p-4 border-t border-gray-200 bg-white" enctype="multipart/form-data">
+      {% csrf_token %}
+      
+      <!-- File Attachment Icon Button -->
+      <label for="fileInput" class="cursor-pointer p-2.5 text-gray-500 hover:text-brand-900 transition rounded-full hover:bg-gray-100" title="Attach file">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57a4 4 0 1 1 5.66 5.66l-8.59 8.58a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+        </svg>
+      </label>
+      <input type="file" id="fileInput" name="file" class="hidden" />
+
+      <input type="text" id="messageInput" name="text" placeholder="Type a message..." autocomplete="off"
+             class="flex-1 border border-gray-300 rounded-full px-4 py-2.5 outline-none focus:border-brand-900" />
+      
+      <button type="submit" id="sendBtn" class="bg-brand-900 text-white font-semibold px-5 py-2.5 rounded-full hover:bg-brand-950 transition">
+        Send
+      </button>
+    </form>
+  </div>
+</section>
+
+<!-- Safely pass Django variables into JS without triggering Linter errors -->
+{{ conversation.pk|json_script:"conversation-id" }}
+{{ messages.last.id|default:0|json_script:"last-message-id" }}
+
+<script>
+  const conversationId = JSON.parse(document.getElementById('conversation-id').textContent);
+  let lastMessageId = JSON.parse(document.getElementById('last-message-id').textContent);
+
+  const messageList = document.getElementById('messageList');
+  const messageForm = document.getElementById('messageForm');
+  const messageInput = document.getElementById('messageInput');
+  const fileInput = document.getElementById('fileInput');
+  const filePreview = document.getElementById('filePreview');
+  const fileName = document.getElementById('fileName');
+  const removeFileBtn = document.getElementById('removeFileBtn');
+
+  function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]').value;
+  }
+
+  function scrollToBottom() {
+    messageList.scrollTop = messageList.scrollHeight;
+  }
+
+  // File indicator handler
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length > 0) {
+      fileName.textContent = `📎 ${fileInput.files[0].name}`;
+      filePreview.classList.remove('hidden');
+    } else {
+      filePreview.classList.add('hidden');
+    }
+  });
+
+  removeFileBtn.addEventListener('click', () => {
+    fileInput.value = '';
+    filePreview.classList.add('hidden');
+  });
+
+  function appendMessage(msg) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex ' + (msg.is_mine ? 'justify-end' : 'justify-start');
+
+    const bubble = document.createElement('div');
+    bubble.className = 'max-w-[75%] px-4 py-2 rounded-2xl text-sm ' +
+      (msg.is_mine ? 'bg-brand-900 text-white' : 'bg-white border border-gray-200 text-gray-800');
+    
+    let content = '';
+    if (msg.text) {
+      content += `<div>${msg.text}</div>`;
+    }
+    if (msg.file_url) {
+      content += `<div class="mt-2 pt-2 border-t border-white/20">
+                    <a href="${msg.file_url}" target="_blank" download class="inline-flex items-center gap-1.5 underline text-xs">
+                      📎 Download Attachment
+                    </a>
+                  </div>`;
+    }
+    content += `<div class="text-[10px] opacity-60 mt-1">${msg.created_at}</div>`;
+    
+    bubble.innerHTML = content;
+    wrapper.appendChild(bubble);
+    messageList.appendChild(wrapper);
+    scrollToBottom();
+
+    if (msg.id > lastMessageId) lastMessageId = msg.id;
+  }
+
+  // Sending a message via FormData
+  messageForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = messageInput.value.trim();
+    const hasFile = fileInput.files.length > 0;
+
+    if (!text && !hasFile) return;
+
+    // Use FormData initialized directly with the form element
+    const formData = new FormData(messageForm);
+
+    try {
+      const response = await fetch(`/messages/${conversationId}/send/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCSRFToken(),
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const msg = await response.json();
+        appendMessage(msg);
+        messageInput.value = '';
+        fileInput.value = '';
+        filePreview.classList.add('hidden');
+      } else {
+        console.error('Failed to send message:', response.statusText);
+      }
+    } catch (err) {
+      console.error('Network error when sending message:', err);
+    }
+  });
+
+  // Polling for new messages
+  async function pollForNewMessages() {
+    try {
+      const response = await fetch(`/messages/${conversationId}/poll/${lastMessageId}/`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.messages && data.messages.length > 0) {
+          data.messages.forEach(appendMessage);
+        }
+      }
+    } catch (err) {
+      console.error('Polling failed:', err);
+    }
+  }
+
+  scrollToBottom();
+  setInterval(pollForNewMessages, 3000);
+</script>
+{% endblock %}

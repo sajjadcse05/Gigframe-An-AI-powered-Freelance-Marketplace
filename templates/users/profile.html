@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile_user.username }} — Gigframe{% endblock %}
+
+{% block content %}
+<section class="max-w-4xl mx-auto px-6 py-16">
+
+  <div class="flex items-start justify-between mb-10">
+    <div class="flex items-center gap-5">
+      {% if profile_user.avatar %}
+        <img src="{{ profile_user.avatar.url }}" alt="{{ profile_user.username }}" class="w-20 h-20 rounded-full object-cover border border-gray-200" />
+      {% else %}
+        <div class="w-20 h-20 rounded-full bg-brand-900 text-white flex items-center justify-center text-2xl font-bold">
+          {{ profile_user.username|slice:":1"|upper }}
+        </div>
+      {% endif %}
+
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-2xl font-bold text-gray-900">{{ profile_user.username }}</h1>
+          {% if profile_user.is_verified %}
+            <span class="text-xs font-semibold bg-green-50 text-green-700 px-2.5 py-1 rounded-full">✓ Verified</span>
+          {% endif %}
+        </div>
+               <p class="text-sm text-gray-500 capitalize">{{ profile_user.role|lower }}</p>
+        {% if profile_user.role == "FREELANCER" and profile_user.hourly_rate %}
+          <p class="text-sm text-brand-900 font-semibold mt-1">৳{{ profile_user.hourly_rate }}/hr</p>
+        {% endif %}
+        {% if average_rating %}
+          <p class="text-sm text-amber-600 font-semibold mt-1">
+            ★ {{ average_rating }} <span class="text-gray-500 font-normal">({{ review_count }} review{{ review_count|pluralize }})</span>
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if user == profile_user %}
+      <a href="{% url 'edit_profile' %}" class="text-sm font-semibold text-brand-800 border border-brand-800 px-4 py-2 rounded-full hover:bg-brand-50 transition">
+        Edit Profile
+      </a>
+    {% endif %}
+  </div>
+
+  {% if profile_user.bio %}
+    <div class="bg-gray-50 rounded-2xl p-6 mb-8">
+      <h2 class="font-semibold text-gray-900 mb-2">About</h2>
+      <p class="text-gray-700 leading-relaxed whitespace-pre-line">{{ profile_user.bio }}</p>
+    </div>
+  {% endif %}
+
+  {% if profile_user.skills %}
+    <div class="mb-10">
+      <h2 class="font-semibold text-gray-900 mb-3">Skills</h2>
+      <div class="flex flex-wrap gap-2">
+        {% for skill in profile_user.skills.split_by_comma %}
+          <span class="text-xs bg-brand-50 text-brand-800 px-3 py-1 rounded-full">{{ skill }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if profile_user.role == "FREELANCER" %}
+    <h2 class="font-semibold text-gray-900 mb-4">Gigs by {{ profile_user.username }}</h2>
+    {% if gigs %}
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for gig in gigs %}
+          <a href="{% url 'gig_detail' gig.pk %}" class="block border border-gray-200 rounded-2xl overflow-hidden hover:border-brand-900 hover:shadow-md transition">
+            {% with first_image=gig.images.first %}
+              {% if first_image %}
+                <img src="{{ first_image.image.url }}" alt="{{ gig.title }}" class="w-full h-36 object-cover" />
+              {% else %}
+                <div class="w-full h-36 bg-brand-50 flex items-center justify-center text-brand-300 text-2xl">🧾</div>
+              {% endif %}
+            {% endwith %}
+            <div class="p-4">
+              <h3 class="font-semibold text-gray-900 text-sm mb-1">{{ gig.title }}</h3>
+              <p class="text-brand-900 font-bold text-sm">৳{{ gig.price }}</p>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-gray-500">No gigs published yet.</p>
+    {% endif %}
+  {% endif %}
+
+  {% if reviews %}
+    <div class="mt-12">
+      <h2 class="font-semibold text-gray-900 mb-4">Reviews ({{ review_count }})</h2>
+      <div class="space-y-4">
+        {% for review in reviews %}
+          <div class="border border-gray-200 rounded-2xl p-5">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-medium text-gray-900">{{ review.reviewer.username }}</span>
+              <span class="text-amber-600 font-semibold">{{ review.rating }} ★</span>
+            </div>
+            {% if review.comment %}
+              <p class="text-sm text-gray-600 leading-relaxed">{{ review.comment }}</p>
+            {% endif %}
+            <p class="text-xs text-gray-400 mt-2">{{ review.created_at|date:"M d, Y" }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+</section>
+{% endblock %}

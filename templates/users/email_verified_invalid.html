@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Verification Failed — Gigframe{% endblock %}
+
+{% block content %}
+<section class="max-w-md mx-auto px-6 py-20 text-center">
+  <div class="text-5xl mb-4">⚠️</div>
+  <h1 class="text-2xl font-bold text-gray-900 mb-3">Link invalid or expired</h1>
+  <p class="text-gray-600 mb-8">This verification link is no longer valid. It may have already been used, or your email may already be verified.</p>
+  <a href="{% url 'home' %}" class="inline-block bg-brand-900 text-white font-semibold px-6 py-3 rounded-full hover:bg-brand-950 transition">
+    Go to Dashboard
+  </a>
+</section>
+{% endblock %}

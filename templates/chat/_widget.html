@@ -1,0 +1,146 @@
+{% if user.is_authenticated and chat_target_user and chat_target_user != user %}
+<div id="chatWidgetRoot" class="fixed bottom-6 left-6 z-50" data-user-id="{{ chat_target_user.id }}" data-username="{{ chat_target_user.username }}">
+
+  <!-- Collapsed bubble -->
+  <button id="widgetBubble" class="flex items-center gap-3 bg-white border border-gray-200 shadow-lg rounded-full pl-2 pr-5 py-2 hover:shadow-xl transition">
+    {% if chat_target_user.avatar %}
+      <img src="{{ chat_target_user.avatar.url }}" class="w-9 h-9 rounded-full object-cover" alt="{{ chat_target_user.username }}" />
+    {% else %}
+      <div class="w-9 h-9 rounded-full bg-brand-900 text-white flex items-center justify-center text-sm font-bold">
+        {{ chat_target_user.username|slice:":1"|upper }}
+      </div>
+    {% endif %}
+    <div class="text-left">
+      <p class="text-sm font-semibold text-gray-900">Message {{ chat_target_user.username }}</p>
+      <p class="text-xs text-gray-400">Click to chat</p>
+    </div>
+  </button>
+
+  <!-- Expanded chat box -->
+  <div id="widgetBox" class="hidden w-80 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden flex flex-col" style="height: 24rem;">
+    <div class="bg-brand-900 text-white px-4 py-3 flex items-center justify-between shrink-0">
+      <span class="font-semibold text-sm" id="widgetHeaderName">{{ chat_target_user.username }}</span>
+      <div class="flex items-center gap-3">
+        <a id="widgetOpenFull" href="#" class="text-xs text-brand-100 hover:text-white underline">Open full chat</a>
+        <button id="widgetClose" class="text-white/80 hover:text-white text-lg leading-none">&times;</button>
+      </div>
+    </div>
+
+    <div id="widgetMessages" class="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50 text-sm"></div>
+
+    <form id="widgetForm" class="flex items-center gap-2 p-3 border-t border-gray-200 bg-white shrink-0">
+      <input type="text" id="widgetInput" placeholder="Type a message..." autocomplete="off"
+             class="flex-1 border border-gray-300 rounded-full px-3 py-2 text-sm outline-none focus:border-brand-900" />
+      <button type="submit" class="bg-brand-900 text-white text-sm font-semibold px-4 py-2 rounded-full hover:bg-brand-950 transition">
+        Send
+      </button>
+    </form>
+  </div>
+</div>
+{% endif %}
+{% if user.is_authenticated and chat_target_user and chat_target_user != user %}
+<script>
+(function () {
+  const root = document.getElementById('chatWidgetRoot');
+  const bubble = document.getElementById('widgetBubble');
+  const box = document.getElementById('widgetBox');
+  const closeBtn = document.getElementById('widgetClose');
+  const messagesEl = document.getElementById('widgetMessages');
+  const form = document.getElementById('widgetForm');
+  const input = document.getElementById('widgetInput');
+  const openFullLink = document.getElementById('widgetOpenFull');
+
+  const targetUserId = root.dataset.userId;
+  let conversationId = null;
+  let lastMessageId = 0;
+  let pollTimer = null;
+  let opened = false;
+
+  function getCSRFToken() {
+    const match = document.cookie.match(/csrftoken=([^;]+)/);
+    return match ? match[1] : '';
+  }
+
+  function scrollToBottom() {
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function renderMessage(msg) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex ' + (msg.is_mine ? 'justify-end' : 'justify-start');
+    const bubbleEl = document.createElement('div');
+    bubbleEl.className = 'max-w-[75%] px-3 py-2 rounded-2xl text-sm ' +
+      (msg.is_mine ? 'bg-brand-900 text-white' : 'bg-white border border-gray-200 text-gray-800');
+    bubbleEl.innerHTML = `${msg.text}<div class="text-[10px] opacity-60 mt-0.5">${msg.created_at}</div>`;
+    wrapper.appendChild(bubbleEl);
+    messagesEl.appendChild(wrapper);
+    if (msg.id > lastMessageId) lastMessageId = msg.id;
+  }
+
+  async function openWidget() {
+    if (!conversationId) {
+      const res = await fetch(`/messages/widget/init/${targetUserId}/`);
+      const data = await res.json();
+      conversationId = data.conversation_id;
+      messagesEl.innerHTML = '';
+      data.messages.forEach(renderMessage);
+      openFullLink.href = `/messages/${conversationId}/`;
+      scrollToBottom();
+      startPolling();
+    }
+    bubble.classList.add('hidden');
+    box.classList.remove('hidden');
+    opened = true;
+  }
+
+  function closeWidget() {
+    box.classList.add('hidden');
+    bubble.classList.remove('hidden');
+    opened = false;
+  }
+
+  async function pollForNewMessages() {
+    if (!conversationId || !opened) return;
+    try {
+      const res = await fetch(`/messages/${conversationId}/poll/${lastMessageId}/`);
+      const data = await res.json();
+      const wasAtBottom = messagesEl.scrollHeight - messagesEl.scrollTop <= messagesEl.clientHeight + 20;
+      data.messages.forEach(renderMessage);
+      if (data.messages.length && wasAtBottom) scrollToBottom();
+    } catch (err) {
+      console.error('Widget polling failed:', err);
+    }
+  }
+
+  function startPolling() {
+    if (pollTimer) return;
+    pollTimer = setInterval(pollForNewMessages, 3000);
+  }
+
+  bubble.addEventListener('click', openWidget);
+  closeBtn.addEventListener('click', closeWidget);
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text || !conversationId) return;
+
+    const res = await fetch(`/messages/${conversationId}/send/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRFToken': getCSRFToken(),
+      },
+      body: `text=${encodeURIComponent(text)}`,
+    });
+
+    if (res.ok) {
+      const msg = await res.json();
+      renderMessage(msg);
+      scrollToBottom();
+      input.value = '';
+    }
+  });
+})();
+</script>
+{% endif %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Add Work Experience — Gigframe{% endblock %}
+
+{% block content %}
+<section class="max-w-lg mx-auto px-6 py-16">
+  <h1 class="text-3xl font-bold text-gray-900 mb-8">Add Work Experience</h1>
+
+  <form method="post" class="space-y-5">
+    {% csrf_token %}
+
+    <div>
+      <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1.5">Title</label>
+      {{ form.title }}
+    </div>
+
+    <div>
+      <label for="{{ form.company_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1.5">Company name</label>
+      {{ form.company_name }}
+    </div>
+
+    <div>
+      <label for="{{ form.employment_type.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1.5">Employment type</label>
+      {{ form.employment_type }}
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label for="{{ form.start_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1.5">Start date</label>
+        {{ form.start_date }}
+      </div>
+      <div>
+        <label for="{{ form.end_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1.5">End date</label>
+        {{ form.end_date }}
+      </div>
+    </div>
+
+    <label class="flex items-center gap-2 text-sm text-gray-700">
+      {{ form.currently_working }} I currently work here
+    </label>
+
+    <div>
+      <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+      {{ form.description }}
+      <p class="text-xs text-gray-500 mt-1">Max 2000 characters</p>
+    </div>
+
+    <button type="submit" class="w-full bg-brand-900 text-white font-semibold py-3 rounded-full hover:bg-brand-950 transition">
+      Add Experience
+    </button>
+  </form>
+</section>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  input[type="text"], input[type="date"], textarea, select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.75rem;
+    outline: none;
+    font-family: inherit;
+  }
+  input:focus, textarea:focus, select:focus { border-color: #0e3b36; box-shadow: 0 0 0 3px rgba(14, 59, 54, 0.1); }
+  input[type="checkbox"] { accent-color: #0e3b36; }
+</style>
+{% endblock %}

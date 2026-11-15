@@ -1,0 +1,73 @@
+{% extends "admin_panel/base.html" %}
+
+{% block title %}Dashboard — Admin — Gigframe{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold text-gray-900 mb-8">Dashboard</h1>
+
+<!-- Stat cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <p class="text-sm text-gray-500">Freelancers</p>
+    <p class="text-3xl font-bold text-gray-900 mt-1">{{ total_freelancers }}</p>
+  </div>
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <p class="text-sm text-gray-500">Clients</p>
+    <p class="text-3xl font-bold text-gray-900 mt-1">{{ total_clients }}</p>
+  </div>
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <p class="text-sm text-gray-500">Active Gigs</p>
+    <p class="text-3xl font-bold text-gray-900 mt-1">{{ active_gigs }} <span class="text-base text-gray-400 font-normal">/ {{ total_gigs }}</span></p>
+  </div>
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <p class="text-sm text-gray-500">Open Jobs</p>
+    <p class="text-3xl font-bold text-gray-900 mt-1">{{ open_jobs }} <span class="text-base text-gray-400 font-normal">/ {{ total_jobs }}</span></p>
+  </div>
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <p class="text-sm text-gray-500">Completed Contracts</p>
+    <p class="text-3xl font-bold text-gray-900 mt-1">{{ completed_contracts }} <span class="text-base text-gray-400 font-normal">/ {{ total_contracts }}</span></p>
+  </div>
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <p class="text-sm text-gray-500">Platform Revenue</p>
+    <p class="text-3xl font-bold text-brand-900 mt-1">৳{{ total_revenue }}</p>
+  </div>
+  <div class="bg-amber-50 rounded-2xl border border-amber-200 p-6">
+    <p class="text-sm text-amber-700">Pending Verifications</p>
+    <p class="text-3xl font-bold text-amber-800 mt-1">{{ pending_verifications }}</p>
+    {% if pending_verifications > 0 %}
+      <a href="{% url 'admin_verification_list' %}" class="text-xs text-amber-700 font-semibold hover:underline mt-2 inline-block">Review now →</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Recent activity -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <h2 class="font-semibold text-gray-900 mb-4">Recently Joined</h2>
+    <div class="space-y-3">
+      {% for u in recent_users %}
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-gray-800">{{ u.username }}</span>
+          <span class="text-xs text-gray-500 capitalize">{{ u.role|lower }}</span>
+        </div>
+      {% empty %}
+        <p class="text-sm text-gray-500">No users yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <h2 class="font-semibold text-gray-900 mb-4">Recent Gigs</h2>
+    <div class="space-y-3">
+      {% for gig in recent_gigs %}
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-gray-800 truncate">{{ gig.title }}</span>
+          <span class="text-xs text-brand-900 font-semibold">৳{{ gig.price }}</span>
+        </div>
+      {% empty %}
+        <p class="text-sm text-gray-500">No gigs yet.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

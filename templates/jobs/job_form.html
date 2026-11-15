@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Post a Job — Gigframe{% endblock %}
+
+{% block content %}
+<section class="max-w-2xl mx-auto px-6 py-16">
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Post a Job</h1>
+  <p class="text-gray-600 mb-8">Describe what you need done. Freelancers will submit proposals, and AI will recommend the best matches.</p>
+
+  <form method="post" class="space-y-5" id="job-post-form">
+    {% csrf_token %}
+
+    <div>
+      <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1.5">Job title</label>
+      {{ form.title }}
+      {% for error in form.title.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+    </div>
+
+    <div>
+      <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+      {{ form.description }}
+      {% for error in form.description.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label for="{{ form.category.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
+        {{ form.category }}
+      </div>
+      <div>
+        <label for="{{ form.budget.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1.5">Budget (৳)</label>
+        {{ form.budget }}
+        <p id="ai-suggestion" class="text-xs text-brand-800 mt-1.5 hidden"></p>
+      </div>
+    </div>
+
+    <div>
+      <label for="{{ form.deadline.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1.5">Deadline</label>
+      {{ form.deadline }}
+      {% for error in form.deadline.errors %}<p class="text-red-600 text-xs mt-1">{{ error }}</p>{% endfor %}
+      <p id="deadline-error" class="text-red-600 text-xs mt-1 hidden"></p>
+    </div>
+
+    <div>
+      <label for="{{ form.required_skills.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1.5">Required skills (comma-separated)</label>
+      {{ form.required_skills }}
+      <p class="text-xs text-gray-500 mt-1">e.g. react, django, ui design — helps AI match the right freelancers</p>
+    </div>
+
+    <button type="submit" class="w-full bg-brand-900 text-white font-semibold py-3 rounded-full hover:bg-brand-950 transition">
+      Post Job
+    </button>
+  </form>
+</section>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  input[type="text"], input[type="number"], input[type="date"], textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.75rem;
+    outline: none;
+    font-family: inherit;
+  }
+  input:focus, textarea:focus {
+    border-color: #0e3b36;
+    box-shadow: 0 0 0 3px rgba(14, 59, 54, 0.1);
+  }
+  input.field-error {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+  }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const categoryField = document.getElementById('{{ form.category.id_for_label }}');
+  const deadlineField = document.getElementById('{{ form.deadline.id_for_label }}');
+  const suggestionBox = document.getElementById('ai-suggestion');
+  const deadlineError = document.getElementById('deadline-error');
+  const form = document.getElementById('job-post-form');
+
+  // Returns true if the deadline is valid, false otherwise.
+  // Also updates the error message UI as a side effect.
+  function validateDeadline() {
+    const value = deadlineField.value;
+
+    // Empty is handled by "required" / server-side validation, not here.
+    if (!value) {
+      deadlineError.classList.add('hidden');
+      deadlineField.classList.remove('field-error');
+      return true;
+    }
+
+    const selectedDate = new Date(value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (isNaN(selectedDate.getTime())) {
+      deadlineError.textContent = 'Please enter a valid date.';
+      deadlineError.classList.remove('hidden');
+      deadlineField.classList.add('field-error');
+      return false;
+    }
+
+    if (selectedDate < today) {
+      deadlineError.textContent = 'Deadline cannot be in the past.';
+      deadlineError.classList.remove('hidden');
+      deadlineField.classList.add('field-error');
+      return false;
+    }
+
+    deadlineError.classList.add('hidden');
+    deadlineField.classList.remove('field-error');
+    return true;
+  }
+
+  function fetchSuggestion() {
+    const category = categoryField.value;
+    const deadlineValue = deadlineField.value;
+
+    if (!category || !deadlineValue || !validateDeadline()) {
+      suggestionBox.classList.add('hidden');
+      return;
+    }
+
+    const deadlineDate = new Date(deadlineValue);
+    const today = new Date();
+    const deliveryDays = Math.max(Math.round((deadlineDate - today) / (1000 * 60 * 60 * 24)), 1);
+
+    const url = "{% url 'job_price_suggestion_api' %}?category=" + encodeURIComponent(category) + "&delivery_days=" + deliveryDays;
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        if (data.suggestion) {
+          suggestionBox.textContent = "AI suggests ৳" + data.suggestion.low + " – ৳" + data.suggestion.high + " for this category and timeline.";
+          suggestionBox.classList.remove('hidden');
+        } else {
+          suggestionBox.classList.add('hidden');
+        }
+      })
+      .catch(() => suggestionBox.classList.add('hidden'));
+  }
+
+  if (categoryField && deadlineField) {
+    categoryField.addEventListener('change', fetchSuggestion);
+    deadlineField.addEventListener('change', fetchSuggestion);
+    deadlineField.addEventListener('input', validateDeadline);
+    deadlineField.addEventListener('blur', validateDeadline);
+  }
+
+  // Block submit if deadline is invalid
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      if (deadlineField && deadlineField.value && !validateDeadline()) {
+        e.preventDefault();
+        deadlineField.focus();
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

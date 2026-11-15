@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Contract — {{ contract.job.title }} — Gigframe{% endblock %}
+
+{% block content %}
+<section class="max-w-2xl mx-auto px-6 py-16">
+  <h1 class="text-3xl font-bold text-gray-900 mb-1">{{ contract.job.title }}</h1>
+  <p class="text-xs text-gray-400 font-mono mb-2">
+    Contract ID: #{{ contract.pk }} · Job ID: #{{ contract.job.pk }}
+  </p>
+  <p class="text-gray-600 mb-2">
+    {% if user == contract.client %}
+      Contract with <span class="font-medium text-gray-900">{{ contract.freelancer.username }}</span>
+      <span class="text-gray-400 font-mono text-xs">(Freelancer ID #{{ contract.freelancer.pk }})</span>
+    {% else %}
+      Contract with <span class="font-medium text-gray-900">{{ contract.client.username }}</span>
+      <span class="text-gray-400 font-mono text-xs">(Client ID #{{ contract.client.pk }})</span>
+    {% endif %}
+  </p>
+  <p class="text-xs text-gray-400 font-mono mb-8">
+    Client ID: #{{ contract.client.pk }} · Freelancer ID: #{{ contract.freelancer.pk }}
+  </p>
+
+  <!-- Status timeline (hidden once cancelled — a linear timeline doesn't represent a cancelled outcome well) -->
+  {% if contract.status != 'CANCELLED' %}
+  <div class="flex items-center justify-between mb-10 text-xs font-semibold">
+    <div class="flex flex-col items-center gap-2 {% if contract.status != 'PENDING_PAYMENT' %}text-brand-900{% else %}text-gray-400{% endif %}">
+      <div class="w-3 h-3 rounded-full {% if contract.status != 'PENDING_PAYMENT' %}bg-brand-900{% else %}bg-gray-300{% endif %}"></div>
+      Funded
+    </div>
+    <div class="flex-1 h-px bg-gray-200 mx-2"></div>
+    <div class="flex flex-col items-center gap-2 {% if contract.status == 'DELIVERED' or contract.status == 'COMPLETED' %}text-brand-900{% else %}text-gray-400{% endif %}">
+      <div class="w-3 h-3 rounded-full {% if contract.status == 'DELIVERED' or contract.status == 'COMPLETED' %}bg-brand-900{% else %}bg-gray-300{% endif %}"></div>
+      Delivered
+    </div>
+    <div class="flex-1 h-px bg-gray-200 mx-2"></div>
+    <div class="flex flex-col items-center gap-2 {% if contract.status == 'COMPLETED' %}text-brand-900{% else %}text-gray-400{% endif %}">
+      <div class="w-3 h-3 rounded-full {% if contract.status == 'COMPLETED' %}bg-brand-900{% else %}bg-gray-300{% endif %}"></div>
+      Paid Out
+    </div>
+  </div>
+  {% else %}
+  <div class="mb-10 text-center">
+    <span class="text-xs font-semibold px-4 py-2 rounded-full bg-red-50 text-red-700">Cancelled & Refunded</span>
+  </div>
+  {% endif %}
+
+  <!-- Pending cancellation banner — shown to both parties while a request is unresolved -->
+  {% if contract.cancellation_pending %}
+  <div class="border border-amber-200 bg-amber-50 rounded-2xl p-6 mb-6">
+    <p class="text-sm font-semibold text-amber-800 mb-1">Cancellation requested</p>
+    <p class="text-sm text-amber-700 mb-4">
+      {{ contract.cancellation_requested_by.username }} requested to cancel this contract:
+      "{{ contract.cancellation_reason }}"
+    </p>
+
+    {% if user != contract.cancellation_requested_by %}
+      <p class="text-xs text-amber-600 mb-3">Respond within 48 hours, or this will auto-cancel with a refund.</p>
+      <div class="flex gap-3">
+        <form method="post" action="{% url 'respond_to_cancellation' contract.pk %}" class="flex-1">
+          {% csrf_token %}
+          <input type="hidden" name="decision" value="accept" />
+          <button type="submit" class="w-full py-2.5 rounded-full bg-red-600 text-white text-sm font-semibold hover:bg-red-700">
+            Accept & Refund
+          </button>
+        </form>
+        <form method="post" action="{% url 'respond_to_cancellation' contract.pk %}" class="flex-1">
+          {% csrf_token %}
+          <input type="hidden" name="decision" value="decline" />
+          <button type="submit" class="w-full py-2.5 rounded-full bg-white border border-amber-300 text-amber-700 text-sm font-semibold hover:bg-amber-100">
+            Decline
+          </button>
+        </form>
+      </div>
+    {% else %}
+      <p class="text-xs text-amber-600">Waiting for the other party to respond — this will auto-cancel after 48 hours if they don't.</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="border border-gray-200 rounded-2xl p-8">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <p class="text-sm text-gray-500">Contract amount</p>
+        <p class="text-3xl font-bold text-brand-900">৳{{ contract.amount }}</p>
+      </div>
+      <span class="text-xs font-semibold px-3 py-1.5 rounded-full
+        {% if contract.status == 'PENDING_PAYMENT' %}bg-amber-50 text-amber-700
+        {% elif contract.status == 'FUNDED' %}bg-blue-50 text-blue-700
+        {% elif contract.status == 'DELIVERED' %}bg-purple-50 text-purple-700
+        {% elif contract.status == 'CANCELLED' %}bg-red-50 text-red-700
+        {% else %}bg-green-50 text-green-700{% endif %}">
+        {{ contract.get_status_display }}
+      </span>
+    </div>
+
+    <!-- Client: pay to fund the contract -->
+    {% if user == contract.client and contract.status == 'PENDING_PAYMENT' %}
+      <a href="{% url 'start_payment' contract.pk %}" class="block w-full text-center bg-brand-900 text-white font-semibold py-3 rounded-full hover:bg-brand-950 transition">
+        Fund Contract — ৳{{ contract.amount }}
+      </a>
+      <p class="text-xs text-gray-500 mt-3 text-center">You'll be redirected to SSLCommerz's secure sandbox payment page.</p>
+    {% endif %}
+
+    <!-- Freelancer waiting for payment -->
+    {% if user == contract.freelancer and contract.status == 'PENDING_PAYMENT' %}
+      <p class="text-center text-gray-500 py-3">Waiting for the client to fund this contract.</p>
+    {% endif %}
+
+    <!-- Freelancer: mark work as delivered -->
+    {% if user == contract.freelancer and contract.status == 'FUNDED' %}
+      <a href="{% url 'mark_delivered' contract.pk %}" class="block w-full text-center bg-brand-900 text-white font-semibold py-3 rounded-full hover:bg-brand-950 transition">
+        Mark as Delivered
+      </a>
+    {% endif %}
+
+    <!-- Client waiting for delivery -->
+    {% if user == contract.client and contract.status == 'FUNDED' %}
+      <p class="text-center text-gray-500 py-3">Funds are in escrow. Waiting for the freelancer to deliver the work.</p>
+    {% endif %}
+
+    <!-- Client: approve and release payment -->
+    {% if user == contract.client and contract.status == 'DELIVERED' %}
+      <a href="{% url 'approve_and_release' contract.pk %}" class="block w-full text-center bg-brand-900 text-white font-semibold py-3 rounded-full hover:bg-brand-950 transition">
+        Approve & Release Payment
+      </a>
+      <p class="text-xs text-gray-500 mt-3 text-center">Only approve once you've reviewed the delivered work.</p>
+    {% endif %}
+
+    <!-- Freelancer waiting for approval -->
+    {% if user == contract.freelancer and contract.status == 'DELIVERED' %}
+      <p class="text-center text-gray-500 py-3">Delivered — waiting for the client's approval to release payment.</p>
+    {% endif %}
+
+    <!-- Cancel option — available to either party once funded, as long as no cancellation is already pending -->
+    {% if contract.status == 'FUNDED' or contract.status == 'DELIVERED' %}
+      {% if not contract.cancellation_pending %}
+        <div class="mt-4 text-center">
+          <a href="{% url 'request_cancellation' contract.pk %}" class="text-xs text-red-600 hover:underline">
+            Unable to complete this contract? Request cancellation
+          </a>
+        </div>
+      {% endif %}
+    {% endif %}
+
+    <!-- Completed -->
+    {% if contract.status == 'COMPLETED' %}
+      <p class="text-center text-green-700 font-medium py-3 mb-2">✓ Contract completed. Payment released.</p>
+
+      {% if already_reviewed %}
+        <p class="text-center text-gray-500 text-sm">You've already left a review for this contract.</p>
+      {% else %}
+        <a href="{% url 'leave_review' contract.pk %}" class="block w-full text-center bg-accent-400 hover:bg-accent-300 transition text-brand-950 font-semibold py-3 rounded-full">
+          Leave a Review
+        </a>
+      {% endif %}
+    {% endif %}
+
+    <!-- Cancelled -->
+    {% if contract.status == 'CANCELLED' %}
+      <p class="text-center text-red-700 font-medium py-3">
+        This contract was cancelled. ৳{{ contract.amount }} has been refunded to {{ contract.client.username }}.
+      </p>
+      {% if contract.cancellation_reason %}
+        <p class="text-center text-gray-500 text-sm">Reason: {{ contract.cancellation_reason }}</p>
+      {% endif %}
+    {% endif %}
+  </div>
+
+    <div class="mt-6 text-center">
+    <a href="{% url 'job_detail' contract.job.pk %}" class="text-sm text-brand-800 hover:underline">View original job posting</a>
+  </div>
+</section>
+{% endblock %}

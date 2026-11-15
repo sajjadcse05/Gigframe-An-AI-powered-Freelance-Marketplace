@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Withdrawal Requests — Gigframe{% endblock %}
+{% block content %}
+<section class="max-w-4xl mx-auto px-6 py-16">
+  <h1 class="text-3xl font-bold text-gray-900 mb-8">Pending Withdrawal Requests</h1>
+
+  {% if withdrawals %}
+  <div class="space-y-4">
+    {% for w in withdrawals %}
+    <div class="border border-gray-200 rounded-2xl p-6">
+      <div class="flex justify-between mb-3">
+        <div>
+          <p class="font-semibold text-gray-900">{{ w.freelancer.username }} — ৳{{ w.amount }}</p>
+          <p class="text-sm text-gray-500">{{ w.get_method_display }} • {{ w.account_holder_name }}</p>
+          {% if w.bank_name %}<p class="text-sm text-gray-500">Bank: {{ w.bank_name }}</p>{% endif %}
+          <p class="text-sm text-gray-500">Number: {{ w.account_number }}</p>
+          <p class="text-xs text-gray-400 mt-1">Requested {{ w.requested_at|date:"d M Y, H:i" }}</p>
+        </div>
+      </div>
+      <div class="flex gap-3">
+        <form method="post" action="{% url 'respond_to_withdrawal' w.pk %}" class="flex-1">
+          {% csrf_token %}
+          <input type="hidden" name="decision" value="approve" />
+          <button type="submit" class="w-full py-2.5 rounded-full bg-brand-900 text-white text-sm font-semibold hover:bg-brand-950">Approve & Mark Paid</button>
+        </form>
+        <form method="post" action="{% url 'respond_to_withdrawal' w.pk %}" class="flex-1">
+          {% csrf_token %}
+          <input type="hidden" name="decision" value="reject" />
+          <button type="submit" class="w-full py-2.5 rounded-full bg-white border border-red-300 text-red-700 text-sm font-semibold hover:bg-red-50">Reject</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-gray-500">No pending withdrawal requests.</p>
+  {% endif %}
+</section>
+{% endblock %}

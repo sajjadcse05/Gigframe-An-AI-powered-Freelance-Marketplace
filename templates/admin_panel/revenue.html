@@ -1,0 +1,183 @@
+{% extends "admin_panel/base.html" %}
+
+{% block title %}Revenue — Admin — Gigframe{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold text-gray-900">Revenue Dashboard</h1>
+  <a href="{% url 'admin_revenue_export' %}?range={{ range_key }}{% if range_key == 'custom' %}&start={{ custom_start }}&end={{ custom_end }}{% endif %}"
+     class="px-5 py-2 rounded-xl bg-brand-900 text-white text-sm font-semibold hover:bg-brand-800">
+    ⬇ Download PDF
+  </a>
+</div>
+
+<!-- Date range filter -->
+<form method="get" class="flex flex-wrap items-end gap-3 mb-6 bg-white rounded-2xl border border-gray-200 p-4">
+  <div>
+    <label class="block text-xs font-medium text-gray-500 mb-1">Period</label>
+    <select name="range" id="range-select" onchange="document.getElementById('custom-dates').classList.toggle('hidden', this.value !== 'custom')"
+      class="px-4 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400">
+      <option value="all" {% if range_key == "all" %}selected{% endif %}>All time</option>
+      <option value="7" {% if range_key == "7" %}selected{% endif %}>Last 7 days</option>
+      <option value="15" {% if range_key == "15" %}selected{% endif %}>Last 15 days</option>
+      <option value="30" {% if range_key == "30" %}selected{% endif %}>Last 30 days</option>
+      <option value="90" {% if range_key == "90" %}selected{% endif %}>Last 90 days</option>
+      <option value="custom" {% if range_key == "custom" %}selected{% endif %}>Custom range</option>
+    </select>
+  </div>
+
+  <div id="custom-dates" class="flex gap-3 {% if range_key != 'custom' %}hidden{% endif %}">
+    <div>
+      <label class="block text-xs font-medium text-gray-500 mb-1">From</label>
+      <input type="date" name="start" value="{{ custom_start }}" class="px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-gray-500 mb-1">To</label>
+      <input type="date" name="end" value="{{ custom_end }}" class="px-3 py-2 rounded-xl border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400" />
+    </div>
+  </div>
+
+  <button type="submit" class="px-5 py-2 rounded-xl bg-brand-900 text-white text-sm font-semibold hover:bg-brand-800">
+    Apply
+  </button>
+  <span class="text-xs text-gray-500 ml-2">Showing: {{ range_label }}</span>
+</form>
+
+<!-- Top stats -->
+<div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <p class="text-sm text-gray-500 mb-1">Total Transaction Volume</p>
+    <p class="text-3xl font-bold text-gray-900">৳{{ total_revenue }}</p>
+  </div>
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <p class="text-sm text-gray-500 mb-1">Platform Earnings ({{ commission_percent }}%)</p>
+    <p class="text-3xl font-bold text-green-700">৳{{ platform_earnings }}</p>
+  </div>
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <p class="text-sm text-gray-500 mb-1">Freelancer Payouts</p>
+    <p class="text-3xl font-bold text-gray-900">৳{{ freelancer_payouts }}</p>
+  </div>
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <p class="text-sm text-gray-500 mb-1">Completed Contracts</p>
+    <p class="text-3xl font-bold text-gray-900">{{ completed_count }}</p>
+  </div>
+</div>
+
+<!-- Contracts by status -->
+<div class="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
+  <h2 class="text-lg font-semibold text-gray-900 mb-4">Contracts by Status</h2>
+  <div class="space-y-1">
+    {% for s in status_counts %}
+      <div class="flex justify-between text-sm">
+        <span class="text-gray-600">{{ s.status }}</span>
+        <span class="font-semibold text-gray-900">{{ s.count }}</span>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Monthly trend (always last 6 months, independent of the filter above) -->
+<div class="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
+  <h2 class="text-lg font-semibold text-gray-900 mb-4">Monthly Revenue (last 6 months)</h2>
+  {% if monthly_revenue %}
+    <div class="space-y-2">
+      {% for m in monthly_revenue %}
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-gray-600">{{ m.month }}</span>
+          <span class="font-semibold text-gray-900">৳{{ m.total }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-gray-500 text-sm">No completed contracts in this period.</p>
+  {% endif %}
+</div>
+
+<!-- Category + Top freelancers -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100">
+      <h2 class="text-lg font-semibold text-gray-900">Platform Earnings by Category</h2>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-500 text-left">
+        <tr>
+          <th class="px-6 py-3 font-medium">Category</th>
+          <th class="px-6 py-3 font-medium">Contracts</th>
+          <th class="px-6 py-3 font-medium">Revenue</th>
+          <th class="px-6 py-3 font-medium">Platform Earnings</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for c in by_category %}
+        <tr>
+          <td class="px-6 py-3 text-gray-900">{{ c.job__category }}</td>
+          <td class="px-6 py-3 text-gray-600">{{ c.count }}</td>
+          <td class="px-6 py-3 text-gray-900 font-semibold">৳{{ c.total }}</td>
+          <td class="px-6 py-3 text-green-700 font-semibold">৳{{ c.platform_earnings }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-6 py-6 text-center text-gray-500">No data for this period.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100">
+      <h2 class="text-lg font-semibold text-gray-900">Top Earning Freelancers</h2>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-500 text-left">
+        <tr>
+          <th class="px-6 py-3 font-medium">Freelancer</th>
+          <th class="px-6 py-3 font-medium">Contracts</th>
+          <th class="px-6 py-3 font-medium">Earned</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for f in top_freelancers %}
+        <tr>
+          <td class="px-6 py-3 text-gray-900">{{ f.freelancer__username }}</td>
+          <td class="px-6 py-3 text-gray-600">{{ f.count }}</td>
+          <td class="px-6 py-3 text-gray-900 font-semibold">৳{{ f.total }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="px-6 py-6 text-center text-gray-500">No data for this period.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Recent transactions -->
+<div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+  <div class="px-6 py-4 border-b border-gray-100">
+    <h2 class="text-lg font-semibold text-gray-900">Recent Completed Transactions</h2>
+  </div>
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50 text-gray-500 text-left">
+      <tr>
+        <th class="px-6 py-3 font-medium">Job</th>
+        <th class="px-6 py-3 font-medium">Client</th>
+        <th class="px-6 py-3 font-medium">Freelancer</th>
+        <th class="px-6 py-3 font-medium">Amount</th>
+        <th class="px-6 py-3 font-medium">Completed</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for c in recent_transactions %}
+      <tr>
+        <td class="px-6 py-3 text-gray-900 truncate max-w-xs">{{ c.job.title }}</td>
+        <td class="px-6 py-3 text-gray-600">{{ c.client.username }}</td>
+        <td class="px-6 py-3 text-gray-600">{{ c.freelancer.username }}</td>
+        <td class="px-6 py-3 text-gray-900 font-semibold">৳{{ c.amount }}</td>
+        <td class="px-6 py-3 text-gray-500">{{ c.completed_at|date:"M d, Y" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="px-6 py-10 text-center text-gray-500">No completed transactions in this period.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

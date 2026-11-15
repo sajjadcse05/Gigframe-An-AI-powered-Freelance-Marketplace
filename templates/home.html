@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Gigframe — Freelance services, matched right{% endblock %}
+
+{% block content %}
+  <section class="relative bg-brand-900 overflow-hidden">
+    <div class="max-w-7xl mx-auto px-6 py-24 md:py-32 relative z-10">
+
+      <div class="flex items-center gap-3 mb-6">
+        <span class="w-2.5 h-2.5 rounded-full bg-accent-400"></span>
+        <span class="w-16 h-px bg-accent-400/60"></span>
+        <span class="w-2.5 h-2.5 rounded-full bg-accent-400"></span>
+        <span class="text-accent-300 text-sm font-medium tracking-wide uppercase ml-2">
+          Bangladesh's freelance marketplace
+        </span>
+      </div>
+
+      <h1 class="text-4xl md:text-6xl font-extrabold text-white leading-tight max-w-3xl">
+        Talent finds you.<br />
+        <span class="text-accent-400">Work finds them.</span>
+      </h1>
+
+      <p class="text-brand-100 text-lg mt-6 max-w-xl">
+        Gigframe matches clients and freelancers by what the work actually needs,
+        not just the words in a search box.
+      </p>
+
+          <form method="get" action="{% url 'gig_list' %}" class="mt-10 max-w-2xl">
+        <div class="flex items-center bg-white rounded-full shadow-lg overflow-hidden">
+          <span class="ml-5 text-gray-400">🔍</span>
+          <input type="text" name="q" placeholder="Search for any service..." class="flex-1 px-4 py-4 text-gray-800 outline-none min-w-0" />
+          <button type="submit" class="bg-brand-900 hover:bg-brand-950 transition text-white px-6 py-4 m-1 rounded-full shrink-0 font-semibold">
+            Search
+          </button>
+        </div>
+      </form>
+
+      <div class="flex flex-wrap gap-3 mt-6">
+        <a href="{% url 'gig_list_by_category' 'web-development' %}" class="border border-brand-400/50 text-brand-50 text-sm font-medium px-4 py-2 rounded-full hover:bg-brand-800 transition">Web Development →</a>
+        <a href="{% url 'gig_list_by_category' 'graphic-design' %}" class="border border-brand-400/50 text-brand-50 text-sm font-medium px-4 py-2 rounded-full hover:bg-brand-800 transition">Graphic Design →</a>
+        <a href="{% url 'gig_list_by_category' 'video-editing' %}" class="border border-brand-400/50 text-brand-50 text-sm font-medium px-4 py-2 rounded-full hover:bg-brand-800 transition">Video Editing →</a>
+        <a href="{% url 'gig_list_by_category' 'content-writing' %}" class="border border-brand-400/50 text-brand-50 text-sm font-medium px-4 py-2 rounded-full hover:bg-brand-800 transition">Content Writing →</a>
+      </div>
+    </div>
+
+    <svg class="absolute right-0 top-0 h-full w-1/3 opacity-15 hidden lg:block" viewBox="0 0 300 600">
+      <circle cx="80" cy="100" r="6" fill="#E8A33D" />
+      <circle cx="200" cy="180" r="6" fill="#E8A33D" />
+      <circle cx="120" cy="300" r="6" fill="#E8A33D" />
+      <circle cx="240" cy="420" r="6" fill="#E8A33D" />
+      <line x1="80" y1="100" x2="200" y2="180" stroke="#E8A33D" stroke-width="1" />
+      <line x1="200" y1="180" x2="120" y2="300" stroke="#E8A33D" stroke-width="1" />
+      <line x1="120" y1="300" x2="240" y2="420" stroke="#E8A33D" stroke-width="1" />
+    </svg>
+  </section>
+
+  <section class="max-w-7xl mx-auto px-6 py-20">
+    <h2 class="text-3xl font-bold text-gray-900 mb-8">Popular categories</h2>
+    <div class="flex gap-5 overflow-x-auto pb-4 -mx-6 px-6">
+      <a href="{% url 'gig_list_by_category' 'web-development' %}" class="category-card bg-brand-800 min-w-[220px] h-40 rounded-2xl p-5 flex flex-col justify-between text-white shrink-0 cursor-pointer">
+        <span class="font-semibold text-lg leading-snug">Web Development</span>
+        <span class="text-accent-400 font-bold">→</span>
+      </a>
+      <a href="{% url 'gig_list_by_category' 'graphic-design' %}" class="category-card bg-brand-800 min-w-[220px] h-40 rounded-2xl p-5 flex flex-col justify-between text-white shrink-0 cursor-pointer">
+        <span class="font-semibold text-lg leading-snug">Graphic Design</span>
+        <span class="text-accent-400 font-bold">→</span>
+      </a>
+      <a href="{% url 'gig_list_by_category' 'digital-marketing' %}" class="category-card bg-brand-800 min-w-[220px] h-40 rounded-2xl p-5 flex flex-col justify-between text-white shrink-0 cursor-pointer">
+        <span class="font-semibold text-lg leading-snug">Digital Marketing</span>
+        <span class="text-accent-400 font-bold">→</span>
+      </a>
+      <a href="{% url 'gig_list_by_category' 'content-writing' %}" class="category-card bg-brand-800 min-w-[220px] h-40 rounded-2xl p-5 flex flex-col justify-between text-white shrink-0 cursor-pointer">
+        <span class="font-semibold text-lg leading-snug">Content Writing</span>
+        <span class="text-accent-400 font-bold">→</span>
+      </a>
+      <a href="{% url 'gig_list_by_category' 'video-editing' %}" class="category-card bg-brand-800 min-w-[220px] h-40 rounded-2xl p-5 flex flex-col justify-between text-white shrink-0 cursor-pointer">
+        <span class="font-semibold text-lg leading-snug">Video Editing</span>
+        <span class="text-accent-400 font-bold">→</span>
+      </a>
+      <a href="{% url 'gig_list_by_category' 'virtual-assistant' %}" class="category-card bg-brand-800 min-w-[220px] h-40 rounded-2xl p-5 flex flex-col justify-between text-white shrink-0 cursor-pointer">
+        <span class="font-semibold text-lg leading-snug">Virtual Assistant</span>
+        <span class="text-accent-400 font-bold">→</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="max-w-7xl mx-auto px-6 py-20">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
+      <div>
+        <span class="inline-flex items-center gap-2 bg-amber-50 text-amber-700 text-xs font-bold uppercase tracking-wide px-3 py-1.5 rounded-full">
+          🔥 Top ranked gigs
+        </span>
+        <h2 class="text-3xl md:text-4xl font-extrabold text-gray-900 mt-4">Our Best Selling Gigs</h2>
+        <p class="text-gray-500 mt-2 max-w-xl">Explore top-rated freelancers ranked by client reviews and demand.</p>
+      </div>
+
+      {% if popular_gigs_by_category %}
+        <div class="flex items-center gap-1 bg-gray-100 rounded-full p-1 overflow-x-auto max-w-full">
+          {% for cat in popular_gigs_by_category %}
+            <button type="button"
+                    class="category-tab px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition {% if forloop.first %}bg-brand-900 text-white{% else %}text-gray-600 hover:text-gray-900{% endif %}"
+                    data-category="{{ cat.value }}">
+              {{ cat.label }}
+            </button>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    {% for cat in popular_gigs_by_category %}
+      <div class="gig-panel {% if not forloop.first %}hidden{% endif %}" data-category-panel="{{ cat.value }}">
+        <div class="flex justify-end mb-3">
+          <a href="{% url 'gig_list_by_category' cat.value|slugify %}" class="text-sm font-semibold text-brand-800 hover:underline">Show all →</a>
+        </div>
+        <div class="flex gap-5 overflow-x-auto pb-4 -mx-6 px-6">
+          {% for gig in cat.gigs %}
+            <a href="{% url 'gig_detail' gig.pk %}" class="min-w-[280px] bg-white border border-gray-100 rounded-2xl overflow-hidden shrink-0 hover:shadow-lg transition block">
+              <div class="h-40 bg-brand-800 flex items-center justify-center overflow-hidden">
+                {% if gig.images.first %}
+                  <img src="{{ gig.images.first.image.url }}" alt="{{ gig.title }}" class="w-full h-full object-cover" />
+                {% else %}
+                  <span class="text-brand-100 text-xs">{{ cat.label }}</span>
+                {% endif %}
+              </div>
+              <div class="p-5">
+                <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1">{{ cat.label }}</p>
+                <h3 class="font-semibold text-gray-900 leading-snug mb-2 line-clamp-2">{{ gig.title }}</h3>
+                <p class="text-sm text-gray-500 mb-2">by {{ gig.freelancer.username }}</p>
+                {% if gig.freelancer_rating %}
+                  <p class="text-sm font-semibold text-amber-500 mb-1">★ {{ gig.freelancer_rating|floatformat:1 }}</p>
+                {% endif %}
+                <p class="font-bold text-gray-900">From ৳{{ gig.price|floatformat:2 }}</p>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </section>
+
+  <section class="bg-gray-50 py-20">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex items-center justify-between border-b border-gray-200 pb-6 mb-12">
+        <h2 class="text-3xl font-bold text-gray-900">Make it happen with Gigframe</h2>
+        <a href="{% url 'register' %}" class="hidden sm:inline-block bg-brand-900 text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-brand-950 transition">
+          Join now
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+        <div>
+          <div class="w-12 h-12 rounded-xl bg-brand-900 flex items-center justify-center mb-4 text-accent-400 text-xl">▦</div>
+          <h3 class="font-semibold text-gray-900 mb-2">Access verified local talent</h3>
+          <p class="text-sm text-gray-600 leading-relaxed">Freelancers across Bangladesh's top skill categories, KYC-checked for trust.</p>
+        </div>
+        <div>
+          <div class="w-12 h-12 rounded-xl bg-brand-900 flex items-center justify-center mb-4 text-accent-400 text-xl">↻</div>
+          <h3 class="font-semibold text-gray-900 mb-2">AI-matched, not just searched</h3>
+          <p class="text-sm text-gray-600 leading-relaxed">Get ranked by relevance to your job, not just keywords.</p>
+        </div>
+        <div>
+          <div class="w-12 h-12 rounded-xl bg-brand-900 flex items-center justify-center mb-4 text-accent-400 text-xl">⚡</div>
+          <h3 class="font-semibold text-gray-900 mb-2">Fair, data-backed pricing</h3>
+          <p class="text-sm text-gray-600 leading-relaxed">AI pricing guidance keeps quotes honest on both sides.</p>
+        </div>
+        <div>
+          <div class="w-12 h-12 rounded-xl bg-brand-900 flex items-center justify-center mb-4 text-accent-400 text-xl">💬</div>
+          <h3 class="font-semibold text-gray-900 mb-2">Pay only when you're happy</h3>
+          <p class="text-sm text-gray-600 leading-relaxed">Escrow-style milestones release funds only on approval.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="max-w-7xl mx-auto px-6 py-20">
+    <div class="bg-brand-900 rounded-3xl px-8 py-16 md:py-20 text-center">
+      <h2 class="text-3xl md:text-5xl font-extrabold text-white max-w-2xl mx-auto leading-tight">
+        Freelance services, matched to what you actually need
+      </h2>
+      <a href="{% url 'register' %}" class="inline-block mt-8 bg-accent-400 hover:bg-accent-300 transition text-brand-950 font-semibold px-8 py-3.5 rounded-full">
+        Join Gigframe
+      </a>
+    </div>
+  </section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.querySelectorAll('.category-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cat = btn.dataset.category;
+
+      document.querySelectorAll('.category-tab').forEach(b => {
+        b.classList.remove('bg-brand-900', 'text-white');
+        b.classList.add('text-gray-600');
+      });
+      btn.classList.add('bg-brand-900', 'text-white');
+      btn.classList.remove('text-gray-600');
+
+      document.querySelectorAll('[data-category-panel]').forEach(panel => {
+        panel.classList.toggle('hidden', panel.dataset.categoryPanel !== cat);
+      });
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Issue — Gigframe{% endblock %}
+
+{% block content %}
+<section class="max-w-md mx-auto px-6 py-20 text-center">
+  <div class="text-5xl mb-4">⚠️</div>
+  <h1 class="text-2xl font-bold text-gray-900 mb-3">
+    {% if reason == "cancelled" %}Payment Cancelled
+    {% elif reason == "failed" %}Payment Failed
+    {% else %}Payment Could Not Be Verified{% endif %}
+  </h1>
+  <p class="text-gray-600 mb-8">
+    {% if reason == "cancelled" %}You cancelled the payment before it completed.
+    {% elif reason == "failed" %}The payment attempt was declined by SSLCommerz.
+    {% else %}We couldn't confirm this payment with SSLCommerz. No charge should have gone through.{% endif %}
+  </p>
+  <a href="{% url 'contract_detail' contract.pk %}" class="inline-block bg-brand-900 text-white font-semibold px-6 py-3 rounded-full hover:bg-brand-950 transition">
+    Back to Contract
+  </a>
+</section>
+{% endblock %}

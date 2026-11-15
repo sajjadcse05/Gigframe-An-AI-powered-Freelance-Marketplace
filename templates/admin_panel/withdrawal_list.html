@@ -1,0 +1,79 @@
+{% extends "admin_panel/base.html" %}
+
+{% block title %}Withdrawal Requests — Admin — Gigframe{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold text-gray-900 mb-6">Withdrawal Requests</h1>
+
+<div class="flex gap-2 mb-6">
+  <a href="?status=PENDING" class="px-4 py-2 rounded-xl text-sm font-semibold {% if selected_status == 'PENDING' %}bg-brand-900 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">Pending</a>
+  <a href="?status=APPROVED" class="px-4 py-2 rounded-xl text-sm font-semibold {% if selected_status == 'APPROVED' %}bg-brand-900 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">Approved</a>
+  <a href="?status=REJECTED" class="px-4 py-2 rounded-xl text-sm font-semibold {% if selected_status == 'REJECTED' %}bg-brand-900 text-white{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">Rejected</a>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+  {% for w in withdrawals %}
+  <div class="bg-white rounded-2xl border border-gray-200 p-6">
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <p class="font-semibold text-gray-900">{{ w.freelancer.username }} <span class="text-gray-400 font-mono text-xs font-normal">#{{ w.freelancer.pk }}</span></p>
+        <p class="text-xs text-gray-500">{{ w.freelancer.email }}</p>
+        <p class="text-lg font-bold text-brand-900 mt-2">৳{{ w.amount }}</p>
+      </div>
+      {% if w.status == "PENDING" %}
+        <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">Pending</span>
+      {% elif w.status == "APPROVED" %}
+        <span class="px-2.5 py-1 rounded-full bg-green-50 text-green-700 text-xs font-semibold">Approved</span>
+      {% else %}
+        <span class="px-2.5 py-1 rounded-full bg-red-50 text-red-700 text-xs font-semibold">Rejected</span>
+      {% endif %}
+    </div>
+
+    <div class="rounded-xl bg-gray-50 border border-gray-200 p-4 mb-4 text-sm text-gray-700 space-y-1">
+      <p><span class="text-gray-400">Method:</span> {{ w.get_method_display }}</p>
+      <p><span class="text-gray-400">Account holder:</span> {{ w.account_holder_name|default:"—" }}</p>
+      {% if w.bank_name %}<p><span class="text-gray-400">Bank:</span> {{ w.bank_name }}</p>{% endif %}
+      <p><span class="text-gray-400">Number:</span> {{ w.account_number|default:"—" }}</p>
+      <p><span class="text-gray-400">Requested:</span> {{ w.requested_at|date:"d M Y, H:i" }}</p>
+      {% if w.processed_at %}<p><span class="text-gray-400">Processed:</span> {{ w.processed_at|date:"d M Y, H:i" }}</p>{% endif %}
+    </div>
+
+    {% if w.status == "PENDING" %}
+      <div class="flex gap-2">
+        <form method="post" action="{% url 'admin_withdrawal_decide' w.pk %}" class="flex-1">
+          {% csrf_token %}
+          <input type="hidden" name="decision" value="approve" />
+          <button type="submit" class="w-full py-2 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700">Approve & Mark Paid</button>
+        </form>
+        <button type="button" onclick="document.getElementById('reject-{{ w.pk }}').classList.toggle('hidden')"
+          class="flex-1 py-2 rounded-xl bg-red-50 text-red-700 text-sm font-semibold hover:bg-red-100">Reject</button>
+      </div>
+
+      <form id="reject-{{ w.pk }}" method="post" action="{% url 'admin_withdrawal_decide' w.pk %}" class="hidden mt-3">
+        {% csrf_token %}
+        <input type="hidden" name="decision" value="reject" />
+        <textarea name="reason" rows="2" placeholder="Reason for rejection..."
+          class="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm mb-2 focus:outline-none focus:ring-2 focus:ring-red-300"></textarea>
+        <button type="submit" class="w-full py-2 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700">Confirm Rejection</button>
+      </form>
+    {% elif w.status == "REJECTED" and w.admin_note %}
+      <p class="text-xs text-red-600 mt-2">Reason: {{ w.admin_note }}</p>
+    {% endif %}
+  </div>
+  {% empty %}
+  <p class="text-gray-500 col-span-2 text-center py-10">No withdrawal requests in this category.</p>
+  {% endfor %}
+</div>
+
+{% if is_paginated %}
+<div class="flex items-center justify-center gap-4 mt-8 text-sm">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&status={{ selected_status }}" class="text-brand-900 font-semibold hover:underline">← Prev</a>
+  {% endif %}
+  <span class="text-gray-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&status={{ selected_status }}" class="text-brand-900 font-semibold hover:underline">Next →</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

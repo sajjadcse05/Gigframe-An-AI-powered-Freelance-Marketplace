@@ -1,0 +1,270 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Gigframe{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#eaf3f2', 100: '#cfe4e1', 400: '#2f7269', 500: '#1c554d',
+              800: '#123a34', 900: '#0e3b36', 950: '#0a2b27',
+            },
+            accent: { 300: '#f2c877', 400: '#e8a33d', 500: '#d6912e' },
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+        },
+      },
+    };
+  </script>
+
+  <link rel="stylesheet" href="{% static 'css/home.css' %}" />
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="font-sans bg-white min-h-screen flex flex-col">
+
+  <header class="border-b border-gray-100">
+    <nav class="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+      <a href="{% url 'home' %}" class="text-2xl font-extrabold text-brand-900 tracking-tight">
+        Gig<span class="text-accent-400">frame</span>
+      </a>
+
+      {% if not user.is_authenticated %}
+        <div class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700">
+          <a href="{% url 'home' %}" class="hover:text-brand-800">Home</a>
+          <a href="{% url 'gig_list' %}" class="hover:text-brand-800">Hire</a>
+          <a href="{% url 'about' %}" class="hover:text-brand-800">About</a>
+          <a href="{% url 'contact' %}" class="hover:text-brand-800">Contact</a>
+        </div>
+      {% else %}
+        <div class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700">
+          <a href="{% url 'home' %}" class="hover:text-brand-800">Home</a>
+          {% if user.role == "FREELANCER" %}
+            <form method="post" action="{% url 'switch_role' %}" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="hover:text-brand-800">Become a Client</button>
+            </form>
+          {% elif user.role == "CLIENT" %}
+            <form method="post" action="{% url 'switch_role' %}" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="hover:text-brand-800">Become a Freelancer</button>
+            </form>
+          {% endif %}
+          <a href="{% url 'about' %}" class="hover:text-brand-800">About</a>
+          <a href="{% url 'contact' %}" class="hover:text-brand-800">Contact</a>
+        </div>
+      {% endif %}
+
+      <div class="hidden md:flex items-center gap-4">
+        {% if user.is_authenticated %}
+          <div class="relative">
+            <button id="chatToggle" class="relative text-gray-700 hover:text-brand-800" aria-label="Messages">
+              <span class="text-xl">💬</span>
+              {% if nav_unread_messages > 0 %}
+                <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  {{ nav_unread_messages }}
+                </span>
+              {% endif %}
+            </button>
+
+            <div id="chatDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 overflow-hidden">
+              {% if nav_conversations %}
+                {% for conv in nav_conversations %}
+                  <a href="{% url 'conversation_detail' conv.pk %}" class="flex items-center justify-between gap-2 px-4 py-3 text-sm border-b border-gray-100 hover:bg-gray-50 {% if conv.unread_from_other > 0 %}bg-brand-50{% endif %}">
+                    <div class="min-w-0">
+                      <p class="font-medium text-gray-900 truncate">{{ conv.other.username }}</p>
+                      {% with last=conv.last_message %}
+                        {% if last %}
+                          <p class="text-xs text-gray-500 truncate">
+                            {% if last.sender == request.user %}You: {% endif %}{{ last.text|truncatechars:40 }}
+                          </p>
+                        {% endif %}
+                      {% endwith %}
+                    </div>
+                    {% if conv.unread_from_other > 0 %}
+                      <span class="shrink-0 bg-brand-900 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                        {{ conv.unread_from_other }}
+                      </span>
+                    {% endif %}
+                  </a>
+                {% endfor %}
+                <a href="{% url 'chat_inbox' %}" class="block text-center px-4 py-3 text-sm font-semibold text-brand-800 hover:bg-gray-50">
+                  View all messages
+                </a>
+              {% else %}
+                <p class="px-4 py-6 text-sm text-gray-500 text-center">No conversations yet</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="relative">
+            <button id="bellToggle" class="relative text-gray-700 hover:text-brand-800" aria-label="Notifications">
+              <span class="text-xl">🔔</span>
+              {% if nav_unread_count > 0 %}
+                <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  {{ nav_unread_count }}
+                </span>
+              {% endif %}
+            </button>
+
+            <div id="bellDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-lg z-50 overflow-hidden">
+              {% if nav_notifications %}
+                {% for note in nav_notifications %}
+                  <a href="{% url 'mark_notification_read' note.pk %}" class="block px-4 py-3 text-sm border-b border-gray-100 hover:bg-gray-50 {% if not note.is_read %}bg-brand-50{% endif %}">
+                    <p class="text-gray-800">{{ note.message }}</p>
+                    <p class="text-xs text-gray-400 mt-1">{{ note.created_at|timesince }} ago</p>
+                  </a>
+                {% endfor %}
+                <a href="{% url 'notification_list' %}" class="block text-center px-4 py-3 text-sm font-semibold text-brand-800 hover:bg-gray-50">
+                  View all
+                </a>
+              {% else %}
+                <p class="px-4 py-6 text-sm text-gray-500 text-center">No notifications yet</p>
+              {% endif %}
+            </div>
+          </div>
+
+                            <a href="{% url 'view_profile' user.username %}" class="flex items-center" title="{{ user.username }}">
+            {% if user.avatar %}
+              <img src="{{ user.avatar.url }}" alt="{{ user.username }}" class="w-9 h-9 rounded-full object-cover border border-gray-200 hover:opacity-80 transition" />
+            {% else %}
+              <div class="w-9 h-9 rounded-full bg-brand-900 text-white flex items-center justify-center text-sm font-bold hover:opacity-80 transition">
+                {{ user.username|slice:":1"|upper }}
+              </div>
+            {% endif %}
+          </a>
+          <form method="post" action="{% url 'logout' %}" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="text-sm font-medium text-gray-700 hover:text-brand-800">Sign out</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}" class="text-sm font-medium text-gray-700 hover:text-brand-800">Sign in</a>
+          <a href="{% url 'register' %}" class="bg-brand-900 text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-brand-950 transition">
+            Join
+          </a>
+        {% endif %}
+      </div>
+
+      <button id="menuToggle" class="md:hidden text-2xl" aria-label="Toggle menu">☰</button>
+    </nav>
+
+    <div id="mobileMenu" class="hidden md:hidden px-6 pb-4 flex-col gap-3 text-sm font-medium text-gray-700">
+      {% if not user.is_authenticated %}
+        <a href="{% url 'home' %}" class="block py-1">Home</a>
+        <a href="{% url 'gig_list' %}" class="block py-1">Hire</a>
+        <a href="{% url 'about' %}" class="block py-1">About</a>
+        <a href="{% url 'contact' %}" class="block py-1">Contact</a>
+      {% else %}
+        <a href="{% url 'home' %}" class="block py-1">Home</a>
+        {% if user.role == "FREELANCER" %}
+          <form method="post" action="{% url 'switch_role' %}">
+            {% csrf_token %}
+            <button type="submit" class="block py-1 text-left">Become a Client</button>
+          </form>
+        {% elif user.role == "CLIENT" %}
+          <form method="post" action="{% url 'switch_role' %}">
+            {% csrf_token %}
+            <button type="submit" class="block py-1 text-left">Become a Freelancer</button>
+          </form>
+        {% endif %}
+        <a href="{% url 'about' %}" class="block py-1">About</a>
+        <a href="{% url 'contact' %}" class="block py-1">Contact</a>
+      {% endif %}
+      {% if user.is_authenticated %}
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="block py-1 text-left">Sign out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'login' %}" class="block py-1">Sign in</a>
+        <a href="{% url 'register' %}" class="bg-brand-900 text-white text-center px-5 py-2.5 rounded-full block mt-2">Join</a>
+      {% endif %}
+    </div>
+  </header>
+
+    {% if user.is_authenticated and not user.email_verified %}
+    <div class="bg-red-50 border-b border-red-200">
+      <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between gap-4 flex-wrap">
+        <p class="text-sm text-red-700">
+          ⚠️ Your email isn't verified yet. Please check your inbox to confirm your address.
+        </p>
+        <form method="post" action="{% url 'resend_verification' %}">
+          {% csrf_token %}
+          <button type="submit" class="text-sm font-semibold text-red-700 hover:underline">
+            Resend verification email
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+  <main class="flex-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="border-t border-gray-100">
+   
+      
+
+    <div class="border-t border-gray-100">
+      <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-2">
+          <span class="text-lg font-extrabold text-brand-900">Gig<span class="text-accent-400">frame</span></span>
+          <span class="text-sm text-gray-500">© Gigframe 2026</span>
+        </div>
+        <div class="flex items-center gap-4 text-sm text-gray-500">
+          <span>English</span>
+          <span>BDT ৳</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const menuToggle = document.getElementById('menuToggle');
+    const mobileMenu = document.getElementById('mobileMenu');
+    menuToggle.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+      mobileMenu.classList.toggle('flex');
+    });
+
+    const bellToggle = document.getElementById('bellToggle');
+    const bellDropdown = document.getElementById('bellDropdown');
+    if (bellToggle) {
+      bellToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        bellDropdown.classList.toggle('hidden');
+      });
+      document.addEventListener('click', (e) => {
+        if (!bellDropdown.contains(e.target) && !bellToggle.contains(e.target)) {
+          bellDropdown.classList.add('hidden');
+        }
+      });
+    }
+
+    const chatToggle = document.getElementById('chatToggle');
+    const chatDropdown = document.getElementById('chatDropdown');
+    if (chatToggle) {
+      chatToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chatDropdown.classList.toggle('hidden');
+      });
+      document.addEventListener('click', (e) => {
+        if (!chatDropdown.contains(e.target) && !chatToggle.contains(e.target)) {
+          chatDropdown.classList.add('hidden');
+        }
+      });
+    }
+  </script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>
